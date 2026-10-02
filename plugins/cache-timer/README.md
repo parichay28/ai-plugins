@@ -2,7 +2,7 @@
 
 A Claude Code mod that shows how long is left before the prompt cache goes cold.
 
-## Why it matters
+## Background
 
 Claude Code sends the whole conversation with every model request. The API keeps a cached copy of that prefix, so the next request reads it cheaply instead of paying full price to process it again. The cached copy only lives for a fixed time after the last request that used it: 5 minutes by default, or 1 hour with the longer cache. If you come back after it expired, the next request pays to write the whole prefix into the cache again.
 
