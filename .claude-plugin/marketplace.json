@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ai-plugins",
+  "owner": {
+    "name": "Parichay",
+    "url": "https://github.com/parichay28"
+  },
+  "metadata": {
+    "description": "Personal plugins, skills, commands and MCP servers for Claude Code and Codex"
+  },
+  "plugins": [
+    {
+      "name": "cache-timer",
+      "description": "Mod: counts down until the prompt cache from the last model request expires, for your status line",
+      "version": "0.1.0",
+      "source": "./plugins/cache-timer"
+    }
+  ]
+}

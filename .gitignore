@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+
+# Engine-generated editor types for mods (rebuilt on each load)
+plugins/*/.claude-plugin/types/
