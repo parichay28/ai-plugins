@@ -1,0 +1,10 @@
+{
+  "name": "image-preview",
+  "version": "0.1.0",
+  "description": "Mod: thumbnail of each image in the prompt box, drawn right above it, for fresh pastes and recalled prompts",
+  "author": {
+    "name": "Parichay",
+    "url": "https://github.com/parichay28"
+  },
+  "types": "./types/index.d.ts"
+}

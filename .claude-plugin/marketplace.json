@@ -14,6 +14,12 @@
       "description": "Mod: counts down until the prompt cache from the last model request expires, for your status line",
       "version": "0.1.0",
       "source": "./plugins/cache-timer"
+    },
+    {
+      "name": "image-preview",
+      "description": "Mod: thumbnail of each image in the prompt box, drawn right above it, for fresh pastes and recalled prompts",
+      "version": "0.1.0",
+      "source": "./plugins/image-preview"
     }
   ]
 }
