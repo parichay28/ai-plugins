@@ -12,7 +12,7 @@ Coming back to a session after the prompt cache expired makes the next request p
 
 ```
 plugins/cache-timer/
-├── .claude-plugin/plugin.json   # version 0.1.0, `userConfig.ttl` (5m | 1h)
+├── .claude-plugin/plugin.json   # version 0.2.0
 ├── hooks/
 │   ├── hooks.json               # { "modules": ["./register.ts"] }
 │   ├── register.ts              # the hooks module
@@ -31,6 +31,29 @@ plugins/cache-timer/
 
 - Entry in `.claude-plugin/marketplace.json`.
 - Validate: `claude plugin validate . && claude plugin validate plugins/cache-timer && claude plugin test plugins/cache-timer`.
+
+## v0.2.0: detect the cache lifetime
+
+v0.1.0 asked the user for the lifetime. Claude Code picks it per request, so a fixed option is wrong for some sessions. v0.2.0 works it out the way Claude Code does (`aoe`/`RWt` in the CLI bundle) and drops the option.
+
+`getCacheTTL` in `hooks/utils.ts`, first match wins:
+
+1. `FORCE_PROMPT_CACHING_5M` → 5m.
+2. `CLAUDE_CODE_PROMPT_CACHE_TTL` (`5m` | `1h`).
+3. `promptCacheTtl` setting.
+4. `ENABLE_PROMPT_CACHING_1H`, or `ENABLE_PROMPT_CACHING_1H_BEDROCK` on Bedrock → 1h.
+5. No rate-limit windows (not a subscriber) → 5m.
+6. An observed lifetime, while the over-limit state it was seen under still holds.
+7. A `five_hour` or `seven_day` window at 100% or more (overage) → 5m, else 1h.
+
+Env values come from `$.env.get`, falling back to the settings `env` block.
+
+Observations:
+
+- Resume or fork: `classic.SessionStart` gives `seconds_since_last_response` and `prompt_cache_likely_expired`. A gap of 5–60 minutes tells Claude Code's lifetime. Rewrite the file dated to the last response, since a fork has a new session id and the old file may carry the wrong lifetime.
+- Each main request: if it started 5–60 minutes after the previous one and read at least 90% of the previous prompt from the cache, the lifetime is 1h. A miss proves nothing (model switch, compaction, eviction, the shared system-prompt cache).
+
+The file is written when a request starts and rewritten with the same start time once it finishes, since the rate-limit windows only arrive with the first reply.
 
 ## Later
 

@@ -12,7 +12,7 @@
     {
       "name": "cache-timer",
       "description": "Mod: counts down until the prompt cache from the last model request expires, for your status line",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./plugins/cache-timer"
     },
     {

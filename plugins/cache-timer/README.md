@@ -18,14 +18,27 @@ The mod and your status line script split the job.
 
 The mod doesn't draw the countdown itself because a mod's status entry appears on its own line above the status line. Drawing it from the script puts it right next to the cached-token count.
 
+### Which lifetime it counts down from
+
+Claude Code picks the cache lifetime per request, and the API response doesn't say which one it used. The mod infers it from the rules Claude Code applies:
+
+- `FORCE_PROMPT_CACHING_5M`, `CLAUDE_CODE_PROMPT_CACHE_TTL` or `promptCacheTtl` in settings win if you've set them. So do `ENABLE_PROMPT_CACHING_1H` and its Bedrock version.
+- On a subscription, the main conversation gets 1 hour.
+- Once you're past your plan's limit and running on extra usage, it drops to 5 minutes. Mods can't see this directly, so the mod takes a usage window at 100% as the sign.
+- With an API key, it's 5 minutes.
+
+The mod only knows you're on a subscription once a response has reported your usage limits. Until then it assumes 5 minutes, and it corrects the line as soon as the first response comes in.
+
+The cache itself can also confirm the answer. If a request more than 5 minutes after the last one still reads almost everything from the cache, the lifetime must be 1 hour, and the mod remembers that.
+
+Resumed sessions start the countdown from the last response in the transcript, not from when you resumed. Claude Code tells the mod how long ago that was and whether it thinks the cache has expired, which also shows which lifetime was in use.
+
 ## Install
 
 ```bash
 claude plugin marketplace add parichay28/ai-plugins
 claude plugin install cache-timer@ai-plugins
 ```
-
-Choose the cache lifetime under **Cache TTL** in the config menu: `5m` (default) or `1h`.
 
 ### Add the countdown to your status line
 

@@ -1,21 +1,9 @@
 {
   "name": "cache-timer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Status-line countdown until the prompt cache from the last model request expires",
   "author": {
     "name": "Parichay",
     "url": "https://github.com/parichay28"
-  },
-  "userConfig": {
-    "ttl": {
-      "type": "string",
-      "title": "Cache TTL",
-      "description": "Prompt cache lifetime to count down from",
-      "options": [
-        "5m",
-        "1h"
-      ],
-      "default": "5m"
-    }
   }
 }
