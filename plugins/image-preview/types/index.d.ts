@@ -23,6 +23,11 @@ export type ThumbnailInput = {
 
 declare module "claude-code" {
   interface PluginState {
-    "image-preview": { previews: Preview[]; selection: Preview | null; hovered: number | null };
+    "image-preview": {
+      previews: Preview[];
+      selection: Preview | null;
+      hovered: number | null;
+      atCursor: number | null;
+    };
   }
 }

@@ -1,6 +1,6 @@
 import { expect, test } from "claude-code/testing";
 
-import { imageIds, isSwap, pngSize, touchedIds } from "../hooks/utils";
+import { idAtCursor, imageIds, isSwap, pngSize, touchedIds } from "../hooks/utils";
 import { fitCells } from "../ui/utils";
 
 function pngHeader(width: number, height: number) {
@@ -47,4 +47,14 @@ test("a recalled prompt replaces the draft; typing and deleting edit it", () => 
   expect(isSwap("look at [Image #4]", "look at [Image #4] please")).toBe(false);
   expect(isSwap("look at [Image #4] please", "look at [Image #4]")).toBe(false);
   expect(isSwap("look at [Image #4]", "look at [Image #4")).toBe(false);
+});
+
+test("the cursor's token is the one it sits in or touches", () => {
+  const text = "fix [Image #1] like [Image #2]";
+  expect(idAtCursor(text, 0)).toBe(null);
+  expect(idAtCursor(text, 4)).toBe(1);
+  expect(idAtCursor(text, 9)).toBe(1);
+  expect(idAtCursor(text, 14)).toBe(1);
+  expect(idAtCursor(text, 16)).toBe(null);
+  expect(idAtCursor(text, text.length)).toBe(2);
 });

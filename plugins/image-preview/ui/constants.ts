@@ -14,6 +14,10 @@ export const IMAGE_ROWS = 3;
 export const CARD_COLUMNS = IMAGE_COLUMNS + 2;
 export const CARD_ROWS = IMAGE_ROWS + 3;
 
+// Same white, the open card a step brighter than a hovered one.
+export const OPEN_COLOR = "whiteBright";
+export const HOVER_COLOR = "white";
+
 // No hide button: Claude Code's `[-]` already collapses this area.
 export const HINT = "click preview to enlarge";
 export const OPEN_HINT = "click preview again to close";

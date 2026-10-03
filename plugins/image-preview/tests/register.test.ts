@@ -1,6 +1,7 @@
 import type { On } from "claude-code";
-import type { Engine, MountTarget } from "claude-code/testing";
+import type { Engine, EngineCall, MountTarget } from "claude-code/testing";
 import { expect, mock, test } from "claude-code/testing";
+import { HOVER_COLOR, OPEN_COLOR } from "../ui/constants";
 
 const TMP_DIR = "/tmp/claude-501";
 const THIS = "session-this";
@@ -311,9 +312,9 @@ test("clicking anywhere on a card paneOpens the preview pane with the picture an
 
   const thumbnails = await $.ui.mount({ ...ABOVE_PROMPT, surface: "terminal" });
   // Hover highlights, click opens.
-  expect(JSON.stringify(await thumbnails.drawn())).not.toContain("whiteBright");
+  expect(JSON.stringify(await thumbnails.drawn())).not.toContain(HOVER_COLOR);
   await thumbnails.pointer({ type: "enter", x: 0, y: 0 });
-  expect(JSON.stringify(await thumbnails.drawn())).toContain("whiteBright");
+  expect(JSON.stringify(await thumbnails.drawn())).toContain(HOVER_COLOR);
   await thumbnails.pointer({ type: "down", x: 6, y: 2, button: "left" });
   await thumbnails.pointer({ type: "up", x: 6, y: 2, button: "left" });
   expect(paneOpens).toMatchObject([
@@ -452,6 +453,55 @@ test("n and p on a clicked card step the pane while the prompt keeps its text", 
   await thumbnails.key({ key: "n", in: "clickable-4" });
   await thumbnails.key({ key: "p", in: "clickable-4" });
   expect(titles).toEqual(["Image #4", "Image #5", "Image #4", "Image #5"]);
+  // The card on show stays lit after the pointer leaves.
+  await thumbnails.pointer({ type: "leave", x: 0, y: 0, in: "clickable-4" });
+  const colors = async () =>
+    (await thumbnails.findAll({ type: "Text" }))
+      .filter((text) => text.text.startsWith("#"))
+      .map((text) => `${text.text} ${text.props.color}`);
+  expect(await colors()).toEqual(["#4 undefined", `#5 ${OPEN_COLOR}`]);
+  // Hovering another card lights it a step dimmer, and the open one stays lit.
+  await thumbnails.pointer({ type: "enter", x: 0, y: 0, in: "clickable-4" });
+  expect(await colors()).toEqual([`#4 ${HOVER_COLOR}`, `#5 ${OPEN_COLOR}`]);
+});
+
+test("moving the cursor onto an image token highlights its thumbnail", async ($, on) => {
+  const { clock, draft } = setup(on, {
+    [`${cacheDir(THIS)}/4.png`]: 100_100,
+    [`${cacheDir(THIS)}/5.png`]: 100_500,
+  });
+  // The editor's own splice; tests can't otherwise raise prompt.edit.
+  on("prompt.edit", ($, e) => ({
+    text: e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end),
+    cursor: e.start + e.inputText.length,
+  }));
+  await start($);
+  await clock.advance(200);
+  draft.text = "[Image #4] and [Image #5]";
+  await clock.advance(200);
+  const edit = ($.prompt as unknown as { edit: EngineCall<"prompt.edit"> }).edit;
+  const thumbnails = await $.ui.mount({ ...ABOVE_PROMPT, surface: "terminal" });
+  const highlighted = async () =>
+    (await thumbnails.findAll({ type: "Text" }))
+      .filter((text) => text.props.color === HOVER_COLOR)
+      .map((text) => text.text);
+  const moveTo = (cursor: number) =>
+    edit({
+      origin: { kind: "composer" },
+      text: draft.text,
+      cursor: 0,
+      start: cursor,
+      end: cursor,
+      inputText: "",
+    });
+
+  expect(await highlighted()).toEqual([]);
+  await moveTo(20);
+  expect(await highlighted()).toEqual(["#5"]);
+  await moveTo(12);
+  expect(await highlighted()).toEqual([]);
+  await moveTo(10);
+  expect(await highlighted()).toEqual(["#4"]);
 });
 
 test("a pane closed by clearing the prompt stays closed when an image is pasted again", async ($, on) => {
@@ -486,8 +536,8 @@ test("polling slows down when idle and catches a paste within a second", async (
   await clock.advance(4_000);
 
   draft.text = "[Image #1]";
-  await clock.advance(200);
+  await clock.advance(100);
   expect(await thumbnailFiles($)).toEqual([]);
-  await clock.advance(800);
+  await clock.advance(900);
   expect(await thumbnailFiles($)).toEqual([`${cacheDir(THIS)}/1.png`]);
 });

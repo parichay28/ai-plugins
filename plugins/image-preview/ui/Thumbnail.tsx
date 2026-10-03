@@ -9,19 +9,22 @@ import {
   HINT,
   OPEN_HINT,
   HINT_COLUMNS,
+  OPEN_COLOR,
+  HOVER_COLOR,
 } from "./constants";
 import { fitCells } from "./utils";
 
 type Props = {
   previews: Preview[];
   columns: number;
-  hovered: number | null;
-  isOpen: boolean;
+  highlighted: number | null;
+  // The card shown in the pane stays lit whatever else is hovered.
+  openId: number | null;
 };
 
 export function Thumbnail(
   { Box, Client, Image, Text }: ElementTable<"terminal">,
-  { previews, columns, hovered, isOpen }: Props,
+  { previews, columns, highlighted, openId }: Props,
 ) {
   // Drop the hint on narrow terminals so at least one card fits.
   const hasHint = columns >= HINT_COLUMNS + CARD_COLUMNS;
@@ -35,7 +38,13 @@ export function Thumbnail(
     <Box flexDirection="row" justifyContent="space-between" height={CARD_ROWS}>
       <Box flexDirection="row" gap={1}>
         {visible.map((preview) => {
-          const isHovered = preview.id === hovered;
+          const color =
+            preview.id === openId
+              ? OPEN_COLOR
+              : preview.id === highlighted
+                ? HOVER_COLOR
+                : undefined;
+          const isHighlighted = color !== undefined;
           return (
             <Box key={`card-${preview.id}`} width={CARD_COLUMNS} height={CARD_ROWS}>
               <Box
@@ -44,8 +53,8 @@ export function Thumbnail(
                 width={CARD_COLUMNS}
                 height={CARD_ROWS}
                 borderStyle="round"
-                borderColor={isHovered ? "whiteBright" : undefined}
-                borderDimColor={!isHovered}
+                borderColor={color}
+                borderDimColor={!isHighlighted}
               >
                 <Box
                   width={IMAGE_COLUMNS}
@@ -60,7 +69,7 @@ export function Thumbnail(
                     alt={`[Image #${preview.id}]`}
                   />
                 </Box>
-                <Text color={isHovered ? "whiteBright" : undefined} dimColor={!isHovered}>
+                <Text color={color} dimColor={!isHighlighted}>
                   #{preview.id}
                 </Text>
               </Box>
@@ -98,7 +107,7 @@ export function Thumbnail(
           alignItems="flex-end"
           width={HINT_COLUMNS}
         >
-          <Text dimColor>{isOpen ? OPEN_HINT : HINT}</Text>
+          <Text dimColor>{openId !== null ? OPEN_HINT : HINT}</Text>
         </Box>
       )}
     </Box>

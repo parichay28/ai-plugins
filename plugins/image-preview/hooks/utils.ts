@@ -1,4 +1,4 @@
-import type { Size } from "../types";
+import type { Preview, Size, ThumbnailInput } from "../types";
 
 const IMAGE_TOKEN = /\[Image #(\d+)\]/g;
 
@@ -6,8 +6,16 @@ export function imageIds(text: string): number[] {
   return [...new Set([...text.matchAll(IMAGE_TOKEN)].map((match) => Number(match[1])))];
 }
 
+// The token the cursor is in or right next to.
+export function idAtCursor(text: string, cursor: number): number | null {
+  const token = [...text.matchAll(IMAGE_TOKEN)].find(
+    (match) => match.index <= cursor && cursor <= match.index + match[0].length,
+  );
+  return token === undefined ? null : Number(token[1]);
+}
+
 // Trim common prefix/suffix; good enough for keystrokes and whole-prompt swaps.
-export function diff(before: string, after: string) {
+function diff(before: string, after: string) {
   let start = 0;
   while (start < before.length && start < after.length && before[start] === after[start]) start++;
   let end = 0;
@@ -54,4 +62,13 @@ export function pngSize(base64: string): Size | null {
   const width = view.getUint32(16);
   const height = view.getUint32(20);
   return width > 0 && height > 0 ? { width, height } : null;
+}
+
+// Same token number can point at another session's file.
+export function isSamePreview(a: Preview, b: Preview) {
+  return a.id === b.id && a.file === b.file;
+}
+
+export function isThumbnailInput(data: unknown): data is ThumbnailInput {
+  return typeof data === "object" && data !== null && "id" in data && typeof data.id === "number";
 }

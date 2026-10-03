@@ -54,7 +54,7 @@ Claude Code saves every image you paste to a file in the session's temp folder, 
 
 When none of these give a clear answer, the mod shows nothing to prevent showing the wrong preview.
 
-Mods don't get an event when you paste or press up, so the mod checks the prompt box five times a second.
+Mods don't get an event when you paste or press up, so the mod checks the prompt box five times a second, slowing to once a second after a few idle seconds.
 
 ## Develop
 

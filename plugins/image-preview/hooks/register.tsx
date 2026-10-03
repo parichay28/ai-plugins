@@ -1,7 +1,7 @@
 import { atom, read, update } from "claude-code";
 import type { EngineInterface, Register } from "claude-code";
 
-import type { Preview, Size, ThumbnailInput } from "../types";
+import type { Preview, Size } from "../types";
 import { CARD_ROWS, PANE_BORDER_COLUMNS, PANE_ID } from "../ui/constants";
 import { Thumbnail } from "../ui/Thumbnail";
 import { paneRows } from "../ui/utils";
@@ -15,7 +15,16 @@ import {
   POLL_MS,
   READ_CAP_BYTES,
 } from "./constants";
-import { imageIds, isSwap, pngSize, removesImage, touchedIds } from "./utils";
+import {
+  idAtCursor,
+  imageIds,
+  isSamePreview,
+  isSwap,
+  isThumbnailInput,
+  pngSize,
+  removesImage,
+  touchedIds,
+} from "./utils";
 
 // Pastes live at <tmp>/<project>/<session>/images/<N>.png; history.jsonl says which
 // session sent a prompt. Untraceable tokens get no preview. `$` and atoms must stay here.
@@ -24,6 +33,7 @@ const previews = atom({ plugin: "image-preview", key: "previews" }, []);
 // Whole preview, not just the id: #N can mean different files across sessions.
 const selection = atom({ plugin: "image-preview", key: "selection" }, null);
 const hovered = atom({ plugin: "image-preview", key: "hovered" }, null);
+const atCursor = atom({ plugin: "image-preview", key: "atCursor" }, null);
 
 type Owners = Map<number, string>;
 type HistoryEntry = {
@@ -257,9 +267,7 @@ async function stepPane($: EngineInterface, step: number) {
   const selected = await read($, selection);
   if (selected === null) return;
   const shown = await read($, previews);
-  const index = shown.findIndex(
-    (other) => other.id === selected.id && other.file === selected.file,
-  );
+  const index = shown.findIndex((other) => isSamePreview(other, selected));
   const other = shown[(index + step + shown.length) % shown.length];
   if (other !== undefined) await openPane($, other, promptColumns);
 }
@@ -292,9 +300,7 @@ async function syncPane($: EngineInterface, before: string, text: string, update
     isFollowing = swapped;
     return;
   }
-  const isGone = !updated.some(
-    (preview) => preview.id === selected.id && preview.file === selected.file,
-  );
+  const isGone = !updated.some((preview) => isSamePreview(preview, selected));
   // Might have been closed while we were reading files.
   if ((isGone || swapped) && (await read($, selection)) !== null)
     await openPane($, first, promptColumns, { focus: false });
@@ -391,23 +397,27 @@ export const register: Register = (on) => {
     if (shown.length === 0 || e.props.hasSurvey || e.props.maxRows < CARD_ROWS) return next(e);
 
     promptColumns = e.props.bodyColumns;
+    const open = await read($, selection);
     return Thumbnail($.ui.resolve(e), {
       previews: shown,
       columns: e.props.bodyColumns,
-      hovered: await read($, hovered),
-      isOpen: (await read($, selection)) !== null,
+      highlighted: (await read($, hovered)) ?? (await read($, atCursor)),
+      openId: open?.id ?? null,
     });
   });
 
-  // Typing wakes polling straight away, so a paste right after shows quickly.
-  on("prompt.edit", ($, e, next) => {
+  // Typing wakes polling so a paste shows quickly. The cursor's token lights up its thumbnail.
+  on("prompt.edit", async ($, e, next) => {
     if (timer !== undefined) setPollRate($, POLL_MS);
-    return next(e);
+    const box = await next(e);
+    const id = idAtCursor(box.text, box.cursor);
+    if ((await read($, atCursor)) !== id) await update($, atCursor, () => id);
+    return box;
   });
 
   on("ui.message", { component: "AbovePrompt", surface: "terminal" }, async ($, e, next) => {
-    const input = e.data as ThumbnailInput | null;
-    if (typeof input !== "object" || input === null || typeof input.id !== "number") return next(e);
+    const input = e.data;
+    if (!isThumbnailInput(input)) return next(e);
     const { id, action } = input;
 
     await update($, hovered, (current) => (input.hovered ? id : current === id ? null : current));
@@ -437,7 +447,7 @@ export const register: Register = (on) => {
       const shown = await read($, previews);
       const index = Math.max(
         0,
-        shown.findIndex((other) => other.id === preview.id && other.file === preview.file),
+        shown.findIndex((other) => isSamePreview(other, preview)),
       );
       return PreviewPane($.ui.resolve(e), {
         preview,
@@ -445,10 +455,7 @@ export const register: Register = (on) => {
         count: shown.length,
         columns,
         rows: e.props.scroll.bodyRows,
-        onStep: (step) => {
-          const other = shown[(index + step + shown.length) % shown.length];
-          if (other !== undefined) void openPane($, other, columns);
-        },
+        onStep: (step) => void stepPane($, step),
       });
     },
   );
