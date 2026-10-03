@@ -1,0 +1,17 @@
+{
+  "name": "ai-plugins",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "typecheck": "for p in plugins/*/tsconfig.json; do tsc --noEmit -p \"$p\" || exit 1; done",
+    "check": "bun run fmt:check && bun run lint && bun run typecheck"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
+    "typescript": "5"
+  }
+}
