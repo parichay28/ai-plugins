@@ -14,6 +14,13 @@ export type Preview = {
   isThisSession: boolean;
 };
 
+export type ThumbnailInput = {
+  id: number;
+  hovered: boolean;
+  /** Resent with every post until the next action, so a hover update can't swallow a click. */
+  action?: { type: "click" | "next" | "previous"; nonce: number };
+};
+
 declare module "claude-code" {
   interface PluginState {
     "image-preview": { previews: Preview[]; selection: Preview | null; hovered: number | null };

@@ -18,7 +18,7 @@
     {
       "name": "image-preview",
       "description": "Mod: thumbnail of each image in the prompt box, drawn right above it, for fresh pastes and recalled prompts",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./plugins/image-preview"
     }
   ]

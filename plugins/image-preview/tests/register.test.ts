@@ -432,6 +432,28 @@ test("clicking the card on show closes the pane, and the hint says so", async ($
   expect(closed).toEqual(["image-preview"]);
 });
 
+test("n and p on a clicked card step the pane while the prompt keeps its text", async ($, on) => {
+  const { clock, draft } = setup(on, {
+    [`${cacheDir(THIS)}/4.png`]: 100_100,
+    [`${cacheDir(THIS)}/5.png`]: 100_500,
+  });
+  const titles: (string | undefined)[] = [];
+  on("ui.open", ($, e) => {
+    titles.push(e.title);
+    return { value: { isPlaced: true } };
+  });
+  await start($);
+  await clock.advance(200);
+  draft.text = "[Image #4] [Image #5]";
+  await clock.advance(200);
+  const thumbnails = await $.ui.mount({ ...ABOVE_PROMPT, surface: "terminal" });
+  await thumbnails.pointer({ type: "up", x: 1, y: 1, button: "left", in: "clickable-4" });
+  await thumbnails.key({ key: "n", in: "clickable-4" });
+  await thumbnails.key({ key: "n", in: "clickable-4" });
+  await thumbnails.key({ key: "p", in: "clickable-4" });
+  expect(titles).toEqual(["Image #4", "Image #5", "Image #4", "Image #5"]);
+});
+
 test("a pane closed by clearing the prompt stays closed when an image is pasted again", async ($, on) => {
   const { clock, draft } = setup(on, {
     [`${cacheDir(THIS)}/4.png`]: 100_100,

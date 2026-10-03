@@ -1,7 +1,7 @@
 import { atom, read, update } from "claude-code";
 import type { EngineInterface, Register } from "claude-code";
 
-import type { Preview, Size } from "../types";
+import type { Preview, Size, ThumbnailInput } from "../types";
 import { CARD_ROWS, PANE_BORDER_COLUMNS, PANE_ID } from "../ui/constants";
 import { Thumbnail } from "../ui/Thumbnail";
 import { paneRows } from "../ui/utils";
@@ -49,6 +49,8 @@ let isFollowing = false;
 // Pane needs a height before it renders, so size it off the prompt width.
 let promptColumns = DEFAULT_COLUMNS;
 let historyCache: { mtimeMs: number; entries: HistoryEntry[] } | undefined;
+// Actions get resent, so remember the last one handled per thumbnail.
+const handledActions = new Map<number, number>();
 const cacheDirs = new Map<string, string>();
 const sizes = new Map<string, Size | null>();
 
@@ -251,6 +253,17 @@ async function openPane(
   });
 }
 
+async function stepPane($: EngineInterface, step: number) {
+  const selected = await read($, selection);
+  if (selected === null) return;
+  const shown = await read($, previews);
+  const index = shown.findIndex(
+    (other) => other.id === selected.id && other.file === selected.file,
+  );
+  const other = shown[(index + step + shown.length) % shown.length];
+  if (other !== undefined) await openPane($, other, promptColumns);
+}
+
 // Clear selection before closing so a late sync can't reopen it.
 async function closePane($: EngineInterface) {
   await update($, selection, () => null);
@@ -393,12 +406,17 @@ export const register: Register = (on) => {
   });
 
   on("ui.message", { component: "AbovePrompt", surface: "terminal" }, async ($, e, next) => {
-    const message = e.data;
-    if (typeof message !== "object" || message === null) return next(e);
-    if ("hover" in message)
-      await update($, hovered, () => (typeof message.hover === "number" ? message.hover : null));
-    if ("open" in message && typeof message.open === "number") {
-      const id = message.open;
+    const input = e.data as ThumbnailInput | null;
+    if (typeof input !== "object" || input === null || typeof input.id !== "number") return next(e);
+    const { id, action } = input;
+
+    await update($, hovered, (current) => (input.hovered ? id : current === id ? null : current));
+    if (action === undefined || handledActions.get(id) === action.nonce) return {};
+    handledActions.set(id, action.nonce);
+
+    if (action.type === "next") await stepPane($, 1);
+    if (action.type === "previous") await stepPane($, -1);
+    if (action.type === "click") {
       const preview = (await read($, previews)).find((other) => other.id === id);
       const selected = await read($, selection);
       if (selected !== null && selected.id === id && selected.file === preview?.file)
