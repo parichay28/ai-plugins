@@ -2,6 +2,8 @@
 
 See the images in your prompt before you send it. This Claude Code mod puts a small thumbnail of each image right above the prompt box, and you can click one to see it full size.
 
+https://github.com/user-attachments/assets/1b0c6b58-05a4-4241-b4ac-4d844d242381
+
 ## Why
 
 When you paste an image into Claude Code, the prompt box just shows `[Image #3]`. That's fine for one image. Once you have three or four, or you press up to reuse an old prompt, you have no idea which picture is which until Claude has already read them.
